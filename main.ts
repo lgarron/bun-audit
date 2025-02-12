@@ -12,12 +12,19 @@ try {
 		console.error("No package.json in the current folder.");
 		exit(1);
 	}
-	if (!(await file("./bun.lockb").exists())) {
-		console.error("No bun.lockb in the current folder.");
+	const bunLockfile = await (async () => {
+		for (const path of ["./bun.lock", "./bun.lockb"]) {
+			if (await file(path).exists()) {
+				return path;
+			}
+		}
+		console.error(
+			"No bun lockfile (`bun.lock` or `bun.lockb`) in the current folder.",
+		);
 		exit(1);
-	}
+	})();
 	await cp("./package.json", join(tempDir, "package.json"));
-	await $`bun bun.lockb > ${join(tempDir, "yarn.lock")}`;
+	await $`bun ${bunLockfile} > ${join(tempDir, "yarn.lock")}`;
 	exitCode = await spawn(["bun", "x", "yarn", "--cwd", tempDir, "audit"], {
 		stdout: "inherit",
 	}).exited;
